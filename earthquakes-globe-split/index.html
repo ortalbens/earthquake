@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>גלובוס רעידות אדמה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="globe"></div>
+
+<div class="loading" id="loading"><div style="text-align:center"><div class="ring"></div><div class="muted">טוען את כדור הארץ…</div></div></div>
+
+<!-- top bar -->
+<div class="topbar glass">
+  <div class="brand"><span class="ms">public</span>רעידות אדמה בעולם · בזמן אמת</div>
+  <button class="chip" id="topChip" title="עוף לרעידה החזקה ביותר"><span class="ms" style="font-size:18px">bolt</span><span id="topChipText">—</span></button>
+  <div class="live"><span class="dot" id="liveDot"></span><span id="liveText">טוען נתונים…</span></div>
+</div>
+
+<!-- side rail -->
+<nav class="rail">
+  <div class="logo"><span class="ms">earthquake</span></div>
+  <button data-view="list" class="on"><span class="ms">format_list_bulleted</span>רעידות</button>
+  <button data-view="stats"><span class="ms">insights</span>נתונים</button>
+  <button data-view="layers"><span class="ms">layers</span>שכבות</button>
+  <button data-view="learn"><span class="ms">school</span>למידה</button>
+</nav>
+
+<!-- drawer -->
+<aside class="drawer glass" id="drawer">
+  <div class="d-head">
+    <h2 id="dTitle">רעידות אדמה</h2>
+    <button class="icon-btn" id="dClose" title="סגירה"><span class="ms">close</span></button>
+  </div>
+  <div class="d-body">
+
+    <section class="view on" id="v-list">
+      <div class="sortbar" id="sortbar">
+        <button class="pill on" data-sort="time">החדשות ביותר</button>
+        <button class="pill" data-sort="mag">החזקות ביותר</button>
+        <button class="pill" data-sort="israel">הקרובות לישראל</button>
+      </div>
+      <div id="rows"><div class="muted small">טוען…</div></div>
+      <div class="muted small" id="listNote" style="margin-top:8px"></div>
+    </section>
+
+    <section class="view" id="v-stats">
+      <div class="cards" id="cards"></div>
+      <div class="chart"><h3>כמה רעידות בכל דרגת עוצמה?</h3><div id="chMag"></div></div>
+      <div class="chart"><h3>באיזה עומק התרחשו?</h3><div id="chDepth"></div></div>
+      <div class="chart"><h3>האזורים הפעילים ביותר</h3><div id="chRegion"></div></div>
+    </section>
+
+    <section class="view" id="v-layers">
+      <div class="group"><h3>טווח זמן</h3>
+        <div class="opts" data-name="period">
+          <button class="opt" data-v="hour">שעה אחרונה</button>
+          <button class="opt on" data-v="day">24 שעות</button>
+          <button class="opt" data-v="week">שבוע</button>
+          <button class="opt" data-v="month">חודש</button>
+        </div></div>
+      <div class="group"><h3>עוצמה מינימלית</h3>
+        <div class="opts" data-name="minmag">
+          <button class="opt" data-v="all">הכול</button>
+          <button class="opt on" data-v="2.5">2.5+</button>
+          <button class="opt" data-v="4.5">4.5+ (משמעותיות)</button>
+        </div></div>
+      <div class="group"><h3>צבע הרעידות לפי</h3>
+        <div class="opts" data-name="color">
+          <button class="opt on" data-v="mag">עוצמה (מגניטודה)</button>
+          <button class="opt" data-v="depth">עומק המוקד</button>
+        </div></div>
+      <div class="group"><h3>מראה כדור הארץ</h3>
+        <div class="opts" data-name="skin">
+          <button class="opt on" data-v="day">🛰️ לוויין – יום</button>
+          <button class="opt" data-v="night">🌃 לילה – אורות ערים</button>
+        </div>
+        <div class="muted small" style="margin-top:6px">טיפ: במצב לילה רואים היכן גרים הרבה אנשים. השוו את זה למיקום הרעידות!</div>
+      </div>
+      <div class="group"><h3>שכבות והגדרות</h3>
+        <label class="toggle">גבולות לוחות טקטוניים <input type="checkbox" id="plates" checked><span class="switch"></span></label>
+        <label class="toggle">עמודות גובה לפי עוצמה <input type="checkbox" id="bars3d" checked><span class="switch"></span></label>
+        <label class="toggle">סיבוב אוטומטי של הגלובוס <input type="checkbox" id="rotate" checked><span class="switch"></span></label>
+        <label class="toggle">צליל בהתראה על רעידה חדשה <input type="checkbox" id="sound"><span class="switch"></span></label>
+        <button class="btn" id="demoToast"><span class="ms">notifications_active</span>הדגמת התראה לכיתה</button>
+      </div>
+    </section>
+
+    <section class="view" id="v-learn">
+      <div class="chips" id="chips">
+        <button class="pill on" data-l="l-read">איך קוראים</button>
+        <button class="pill" data-l="l-mag">מגניטודה</button>
+        <button class="pill" data-l="l-depth">עומק</button>
+        <button class="pill" data-l="l-israel">ישראל</button>
+        <button class="pill" data-l="l-q">שאלות לחקר</button>
+        <button class="pill" data-l="l-sites">אתרים</button>
+      </div>
+
+      <div class="lesson on" id="l-read">
+        <h3>איך קוראים את הגלובוס?</h3>
+        <ul>
+          <li><b>כל עמודה או נקודה היא רעידת אדמה אחת</b>, במיקום ה<b>מוקד העילי (אפיצנטר)</b>.</li>
+          <li><b>גובה העמודה ורוחבה</b> מראים את העוצמה. עמודה גבוהה = רעידה חזקה.</li>
+          <li><b>הצבע</b> מראה עוצמה או עומק. בוחרים בלשונית "שכבות".</li>
+          <li><b>הקווים הכתומים</b> הם הגבולות בין הלוחות הטקטוניים.</li>
+          <li><b>גלים מתרחבים</b> מסמנים רעידה חדשה או רעידה שבחרתם. על כל רעידה חדשה קופץ גם באנר בצד המסך.</li>
+          <li>גוררים את הגלובוס כדי לסובב אותו, וגוללים כדי להתקרב.</li>
+        </ul>
+        <div class="note">⚠️ הנתונים מגיעים מ-USGS באיחור של כמה דקות, ולפעמים יותר. רעידות קטנות נקלטות בעיקר באזורים שיש בהם הרבה תחנות מדידה, כמו קליפורניה, אלסקה והוואי, ולכן צריך להיזהר כשמסיקים מהן מסקנות.</div>
+      </div>
+
+      <div class="lesson" id="l-mag">
+        <h3>מגניטודה – כמה אנרגיה השתחררה?</h3>
+        <p><b>מגניטודה</b> היא מספר אחד לכל רעידה, והיא מודדת את <b>האנרגיה</b> שהשתחררה במוקד. היום משתמשים בעיקר בסולם המגניטודה של המומנט (Mw), אבל ביומיום עדיין אומרים "סולם ריכטר".</p>
+        <p><b>עצימות</b> (סולם מרקלי, I–XII) מתארת <b>מה הרגישו ואיזה נזק נגרם במקום מסוים</b>. לכן לרעידה אחת יש מגניטודה אחת, אבל עצימויות שונות במקומות שונים.</p>
+        <table>
+          <tr><th>מגניטודה</th><th>תיאור</th><th>השפעה אופיינית</th></tr>
+          <tr><td><span class="swatch" style="background:var(--m1)"></span>&lt; 2.5</td><td>זעירה</td><td>בדרך כלל לא מורגשת</td></tr>
+          <tr><td><span class="swatch" style="background:var(--m2)"></span>2.5–4.4</td><td>קלה</td><td>לפעמים מורגשת, ונזק נדיר</td></tr>
+          <tr><td><span class="swatch" style="background:var(--m3)"></span>4.5–5.9</td><td>בינונית</td><td>נזק אפשרי למבנים חלשים</td></tr>
+          <tr><td><span class="swatch" style="background:var(--m4)"></span>6.0–6.9</td><td>חזקה</td><td>נזק משמעותי באזורים מיושבים</td></tr>
+          <tr><td><span class="swatch" style="background:var(--m5)"></span>7.0+</td><td>חזקה מאוד</td><td>נזק כבד, ואם המוקד מתחת לים ייתכן צונאמי</td></tr>
+        </table>
+        <p><b>הסולם לוגריתמי:</b> כל עלייה של מספר שלם אחד במגניטודה פירושה שחרור אנרגיה גדול <b>פי 32 בערך</b>.</p>
+        <div class="calc">🧮 רעידה בעוצמה <input type="number" id="cA" value="7" step="0.1" min="0" max="10"> משחררת פי <span class="res" id="cRes">—</span> יותר אנרגיה מרעידה בעוצמה <input type="number" id="cB" value="5" step="0.1" min="0" max="10"></div>
+      </div>
+
+      <div class="lesson" id="l-depth">
+        <h3>עומק המוקד</h3>
+        <p>ה<b>מוקד (היפוצנטר)</b> הוא הנקודה בתוך כדור הארץ שבה התחילה הרעידה. ה<b>מוקד העילי (אפיצנטר)</b> נמצא על פני השטח בדיוק מעליו.</p>
+        <table>
+          <tr><th>קבוצה</th><th>עומק</th><th>מה חשוב לדעת</th></tr>
+          <tr><td><span class="swatch" style="background:var(--d1)"></span>רדודה</td><td>0–70 ק"מ</td><td>הסוג הנפוץ ביותר, ובדרך כלל גורם לנזק הגדול ביותר</td></tr>
+          <tr><td><span class="swatch" style="background:var(--d2)"></span>בינונית</td><td>70–300 ק"מ</td><td>מופיעה בעיקר באזורי הפחתה</td></tr>
+          <tr><td><span class="swatch" style="background:var(--d3)"></span>עמוקה</td><td>300–700 ק"מ</td><td>מופיעה <b>רק</b> במקומות שבהם לוח אוקייני שוקע לתוך המעטפת</td></tr>
+        </table>
+        <p><b>נסו בעצמכם:</b> ב"שכבות" בחרו צבע לפי <b>עומק</b>, טווח של <b>חודש</b> ועוצמה <b>4.5+</b>. סובבו את הגלובוס לדרום אמריקה, ליפן או לטונגה. מה קורה לעומק הרעידות ככל שמתרחקים מהחוף לכיוון היבשה?</p>
+      </div>
+
+      <div class="lesson" id="l-israel">
+        <h3>ישראל ורעידות אדמה</h3>
+        <p>ישראל נמצאת לאורך <b>בקע ים המלח</b> (נקרא גם "השבר הסורי-אפריקני"). זה גבול בין <b>הלוח הערבי</b> לבין <b>תת-לוח סיני</b> (חלק מהלוח האפריקני). הלוחות נעים זה לצד זה בתנועה אופקית, בקצב של כמה מילימטרים בשנה.</p>
+        <ul>
+          <li><b>1927 – רעידת יריחו:</b> רעידה במגניטודה של כ-6.2. נהרגו בה מאות אנשים, ונגרם נזק בירושלים, שכם, לוד ורמלה.</li>
+          <li><b>749 לספירה:</b> רעידה הרסנית שהחריבה ערים באזור, ובהן בית שאן וטבריה.</li>
+          <li>הגבול הזה פעיל, ולכן מומחים צופים שבעתיד תתרחש בישראל רעידה חזקה. אי אפשר לדעת מתי.</li>
+          <li>בישראל פועלת <b>מערכת התרעה מוקדמת</b>. היא יכולה לתת כמה שניות התרעה לפני שהגלים ההרסניים מגיעים.</li>
+        </ul>
+        <p>ההנחיות המעודכנות למה עושים ברעידת אדמה נמצאות באתר <a href="https://www.oref.org.il/" target="_blank" rel="noopener">פיקוד העורף</a>.</p>
+        <p><b>על הגלובוס:</b> לחצו על כפתור ישראל בצד המסך, ומיינו את הרשימה לפי "הקרובות לישראל".</p>
+      </div>
+
+      <div class="lesson" id="l-q">
+        <h3>שאלות לחקר ומסקנות</h3>
+        <p class="muted small">נסו לענות לבד, ורק אחר כך פתחו את הרמז.</p>
+        <details><summary>1. היכן נמצאות רוב הרעידות? האם הן מפוזרות באקראי?</summary><div class="hint">רוב הרעידות מתרכזות ב<b>רצועות צרות לאורך גבולות הלוחות</b>. מכאן אפשר להסיק שרעידות אדמה נגרמות בעיקר מתנועת הלוחות זה ביחס לזה.</div></details>
+        <details><summary>2. מצאו את "טבעת האש" של האוקיינוס השקט. אילו מדינות נמצאות עליה?</summary><div class="hint">צ'ילה, פרו, מקסיקו, ארה"ב (קליפורניה ואלסקה), יפן, הפיליפינים, אינדונזיה, ניו זילנד, טונגה ועוד. כאן מתרחשות רוב הרעידות החזקות בעולם, ויש כאן גם הרבה הרי געש.</div></details>
+        <details><summary>3. צבעו לפי עומק. היכן מופיעות הרעידות העמוקות (הכחולות)?</summary><div class="hint">רק באזורי <b>הפחתה</b>, שבהם לוח אוקייני צולל מתחת ללוח אחר. ככל שמתרחקים מהשוחה האוקיינית, הרעידות עמוקות יותר, כי הן מסמנות את הלוח השוקע.</div></details>
+        <details><summary>4. מצאו רעידות באמצע האוקיינוס האטלנטי. איזה גבול לוחות יש שם?</summary><div class="hint">שם עובר <b>הרכס המרכז-אטלנטי</b>, גבול מתרחק שבו נוצר קרום אוקייני חדש. הרעידות שם בדרך כלל רדודות.</div></details>
+        <details><summary>5. בחרו "הכול" בעוצמה. למה יש כל כך הרבה רעידות קטנות בארה"ב ומעט באפריקה?</summary><div class="hint">זו <b>הטיה בנתונים</b>. בארה"ב יש רשתות צפופות של מדי רעידות, ולכן נקלטות גם רעידות זעירות. במקומות אחרים קולטים בעיקר רעידות גדולות. מסקנה: חשוב לשאול <b>איך נאספו הנתונים</b>.</div></details>
+        <details><summary>6. בלשונית "נתונים": מה הקשר בין עוצמת הרעידות למספר שלהן?</summary><div class="hint">יש הרבה רעידות קטנות ומעט חזקות. בערך: על כל עלייה של מגניטודה אחת, מספר הרעידות קטן פי 10 בערך (חוק גוטנברג–ריכטר).</div></details>
+        <details><summary>7. עברו למצב "לילה – אורות ערים". האם רעידה חזקה תמיד גורמת לאסון גדול?</summary><div class="hint">לא בהכרח. הנזק תלוי ב<b>עומק המוקד</b>, ב<b>קרבה לאזורים מיושבים</b> (האורות!), ב<b>איכות הבנייה</b>, בסוג הקרקע וב<b>היערכות</b> של המדינה.</div></details>
+        <details><summary>8. השאירו את האתר פתוח במהלך השיעור. כמה רעידות חדשות הופיעו? האם אפשר לחזות רעידות?</summary><div class="hint">אפשר לדעת <b>היכן</b> צפויות רעידות, לאורך גבולות הלוחות, אבל אי אפשר לחזות <b>מתי בדיוק</b> ו<b>באיזו עוצמה</b>. לכן ההיערכות מראש חשובה כל כך: תקני בנייה, מערכות התרעה ותרגילים.</div></details>
+      </div>
+
+      <div class="lesson" id="l-sites">
+        <h3>אתרים מומלצים</h3>
+        <a class="site" href="https://earthquake.usgs.gov/earthquakes/map/" target="_blank" rel="noopener"><b>USGS – Latest Earthquakes</b><div class="muted small">מקור הנתונים של האתר, עם דף מפורט לכל רעידה (באנגלית)</div></a>
+        <a class="site" href="https://www.emsc-csem.org/" target="_blank" rel="noopener"><b>EMSC – המרכז הסייסמולוגי האירופי-ים תיכוני</b><div class="muted small">מתאים לאזור שלנו, כולל דיווחים של אנשים שהרגישו את הרעידה (באנגלית)</div></a>
+        <a class="site" href="https://ds.iris.edu/seismon/" target="_blank" rel="noopener"><b>IRIS Seismic Monitor</b><div class="muted small">מפה פשוטה של רעידות אחרונות וגלי רעידה (באנגלית)</div></a>
+        <a class="site" href="https://www.gsi.gov.il/" target="_blank" rel="noopener"><b>המכון הגיאולוגי לישראל</b><div class="muted small">ניטור רעידות אדמה בישראל ומערכת ההתרעה</div></a>
+        <a class="site" href="https://www.oref.org.il/" target="_blank" rel="noopener"><b>פיקוד העורף</b><div class="muted small">הנחיות התגוננות ברעידת אדמה</div></a>
+      </div>
+    </section>
+  </div>
+</aside>
+
+<!-- globe navigation -->
+<div class="nav">
+  <div class="group-btns glass">
+    <button id="zoomIn" data-tip="התקרבות"><span class="ms">add</span></button>
+    <button id="zoomOut" data-tip="התרחקות"><span class="ms">remove</span></button>
+  </div>
+  <div class="group-btns glass">
+    <button id="viewWorld" data-tip="מבט עולמי"><span class="ms">public</span></button>
+    <button id="viewIsrael" data-tip="ישראל והסביבה"><span class="ms">my_location</span></button>
+    <button id="rotateBtn" class="on" data-tip="סיבוב אוטומטי"><span class="ms">360</span></button>
+  </div>
+</div>
+
+<div class="legend glass" id="legend"></div>
+
+<div class="statusbar">
+  <span id="clock"></span>
+  <span>נתונים: <a href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php" target="_blank" rel="noopener">USGS</a> · גבולות לוחות: Bird (2003) PB2002 · תמונות: NASA דרך three-globe</span>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script src="https://unpkg.com/globe.gl@2.46.2/dist/globe.gl.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
