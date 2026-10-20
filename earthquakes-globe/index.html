@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>גלובוס רעידות אדמה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<style>
+  :root {
+    --glass: rgba(26, 28, 34, .78);
+    --glass-strong: rgba(26, 28, 34, .92);
+    --edge: rgba(255, 255, 255, .09);
+    --ink: #e8eaed;
+    --muted: #9aa0a6;
+    --accent: #8ab4f8;
+    --accent-soft: rgba(138, 180, 248, .16);
+    --hover: rgba(255, 255, 255, .07);
+    --plate: #ff9a3c;
+    --m1: #7bd04b; --m2: #f7d038; --m3: #ff8a2b; --m4: #ff3b3b; --m5: #c84bff;
+    --d1: #ff4d6d; --d2: #ffb020; --d3: #4da3ff;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: var(--ink); font-family: "Heebo", system-ui, sans-serif; }
+  a { color: var(--accent); }
+  button { font: inherit; color: inherit; }
+  .ms { font-family: "Material Symbols Rounded"; font-weight: normal; font-style: normal; font-size: 22px; line-height: 1; display: inline-block; direction: ltr; -webkit-font-smoothing: antialiased; font-feature-settings: "liga"; }
+  .glass { background: var(--glass); backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); border: 1px solid var(--edge); box-shadow: var(--shadow); }
+
+  #globe { position: fixed; inset: 0; }
+
+  /* ---------- top bar ---------- */
+  .topbar { position: fixed; top: 16px; left: 16px; z-index: 10; display: flex; align-items: center; gap: 14px; padding: 8px 10px 8px 18px; border-radius: 999px; white-space: nowrap; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.05rem; padding-inline-start: 6px; }
+  .brand .ms { color: var(--accent); font-size: 26px; }
+  .live { display: inline-flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--muted); border-inline-start: 1px solid var(--edge); padding-inline-start: 14px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #34d399; animation: pulse 2s infinite; }
+  .dot.err { background: #ef4444; animation: none; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(52,211,153,.7); } 70% { box-shadow: 0 0 0 9px rgba(52,211,153,0); } 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); } }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--ink); border: 0; cursor: pointer; font-size: .82rem; }
+  .chip:hover { background: rgba(138,180,248,.28); }
+
+  /* ---------- side rail ---------- */
+  .rail { position: fixed; top: 0; right: 0; bottom: 0; width: 72px; z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 0; background: rgba(20, 21, 26, .85); backdrop-filter: blur(14px); border-left: 1px solid var(--edge); }
+  .rail .logo { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(135deg, #1a73e8, #8ab4f8); margin-bottom: 14px; }
+  .rail .logo .ms { color: #fff; font-size: 28px; }
+  .rail button { width: 60px; border: 0; background: none; cursor: pointer; border-radius: 14px; padding: 8px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: .7rem; color: var(--muted); }
+  .rail button .ms { padding: 4px 16px; border-radius: 999px; transition: background .2s; }
+  .rail button:hover .ms { background: var(--hover); }
+  .rail button.on { color: var(--ink); }
+  .rail button.on .ms { background: var(--accent-soft); color: var(--accent); font-variation-settings: "FILL" 1; }
+
+  /* ---------- drawer panel ---------- */
+  .drawer { position: fixed; top: 12px; bottom: 12px; right: 84px; width: 400px; z-index: 15; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; transform: translateX(0); opacity: 1; transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .25s; background: var(--glass-strong); }
+  .drawer.closed { transform: translateX(30px); opacity: 0; pointer-events: none; }
+  .drawer.wide { width: 520px; }
+  .d-head { padding: 16px 18px 10px; display: flex; align-items: center; gap: 10px; }
+  .d-head h2 { margin: 0; font-size: 1.15rem; font-weight: 700; flex: 1; }
+  .icon-btn { border: 0; background: none; cursor: pointer; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+  .icon-btn:hover { background: var(--hover); color: var(--ink); }
+  .d-body { flex: 1; overflow-y: auto; padding: 0 18px 18px; }
+  .d-body::-webkit-scrollbar { width: 8px; } .d-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 8px; }
+  .view { display: none; } .view.on { display: block; }
+  .muted { color: var(--muted); } .small { font-size: .8rem; }
+
+  /* list */
+  .sortbar { display: flex; gap: 6px; margin: 0 0 10px; flex-wrap: wrap; }
+  .pill { border: 1px solid var(--edge); background: none; color: var(--muted); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: .82rem; }
+  .pill.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .q { display: grid; grid-template-columns: 50px 1fr auto; gap: 12px; align-items: center; padding: 10px 8px; border-radius: 12px; cursor: pointer; }
+  .q:hover { background: var(--hover); }
+  .q.sel { background: var(--accent-soft); }
+  .mag { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; font-weight: 800; font-size: 1rem; color: #111; box-shadow: 0 0 14px -2px currentColor; }
+  .mag span { color: #111; }
+  .mag.sm { width: 34px; height: 34px; font-size: .8rem; }
+  .region { font-weight: 700; }
+  .place { color: var(--muted); font-size: .75rem; direction: ltr; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 230px; }
+  .q .when { text-align: left; font-size: .78rem; color: var(--muted); white-space: nowrap; }
+  .tag-new { background: #ff3b3b; color: #fff; font-size: .66rem; border-radius: 6px; padding: 1px 6px; margin-inline-start: 6px; font-weight: 700; vertical-align: middle; }
+  .tag-ts { margin-inline-start: 4px; }
+
+  /* stats */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .card { background: rgba(255,255,255,.04); border: 1px solid var(--edge); border-radius: 14px; padding: 12px 14px; }
+  .card .k { color: var(--muted); font-size: .78rem; }
+  .card .v { font-size: 1.6rem; font-weight: 800; line-height: 1.25; }
+  .card .s { font-size: .76rem; color: var(--muted); }
+  .chart h3 { font-size: .95rem; margin: 18px 0 10px; }
+  .bar-row { display: grid; grid-template-columns: 120px 1fr 40px; gap: 8px; align-items: center; font-size: .8rem; margin-bottom: 7px; }
+  .bar-track { background: rgba(255,255,255,.07); border-radius: 6px; height: 14px; overflow: hidden; }
+  .bar { height: 100%; border-radius: 6px; transition: width .6s; }
+  .bar-n { text-align: left; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* layers / settings */
+  .group { margin-bottom: 20px; }
+  .group h3 { font-size: .8rem; color: var(--muted); font-weight: 500; margin: 0 0 8px; letter-spacing: .02em; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opt { border: 1px solid var(--edge); background: rgba(255,255,255,.03); border-radius: 12px; padding: 8px 12px; cursor: pointer; font-size: .86rem; color: var(--ink); }
+  .opt.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--edge); cursor: pointer; font-size: .92rem; }
+  .switch { width: 38px; height: 22px; border-radius: 999px; background: rgba(255,255,255,.2); position: relative; transition: background .2s; flex: none; }
+  .switch::after { content: ""; position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: right .2s; }
+  .toggle input { display: none; }
+  .toggle input:checked + .switch { background: var(--accent); }
+  .toggle input:checked + .switch::after { right: 19px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; border: 0; background: var(--accent); color: #0b1a33; font-weight: 700; border-radius: 999px; padding: 9px 18px; cursor: pointer; margin-top: 14px; }
+
+  /* learn */
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 6px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips .pill { white-space: nowrap; }
+  .lesson { display: none; font-size: .93rem; line-height: 1.65; }
+  .lesson.on { display: block; }
+  .lesson h3 { font-size: 1.05rem; margin: 6px 0 8px; }
+  .lesson table { width: 100%; border-collapse: collapse; font-size: .85rem; margin: 10px 0; }
+  .lesson td, .lesson th { border-bottom: 1px solid var(--edge); padding: 7px 6px; text-align: right; vertical-align: top; }
+  .lesson th { color: var(--muted); font-weight: 500; }
+  .lesson ul { padding-inline-start: 20px; }
+  .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-left: 6px; vertical-align: middle; }
+  .note { background: rgba(255,176,32,.1); border: 1px solid rgba(255,176,32,.3); border-radius: 12px; padding: 10px 14px; font-size: .86rem; }
+  details { background: rgba(255,255,255,.04); border: 1px solid var(--edge); border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; }
+  details summary { cursor: pointer; font-weight: 500; }
+  details[open] summary { color: var(--accent); }
+  details .hint { margin-top: 8px; color: #cfd3d8; font-size: .88rem; }
+  .calc { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--accent-soft); padding: 12px 14px; border-radius: 12px; font-size: .88rem; }
+  .calc input { width: 62px; padding: 4px 6px; border: 1px solid var(--edge); border-radius: 8px; background: rgba(0,0,0,.3); color: var(--ink); font: inherit; }
+  .calc .res { font-weight: 800; font-size: 1.15rem; color: var(--accent); }
+  .site { display: block; text-decoration: none; border: 1px solid var(--edge); border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; color: var(--ink); }
+  .site:hover { background: var(--hover); }
+  .site b { color: var(--accent); }
+
+  /* ---------- map controls (bottom-left) ---------- */
+  .nav { position: fixed; left: 16px; bottom: 44px; z-index: 10; display: flex; flex-direction: column; gap: 8px; }
+  .nav .group-btns { border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+  .nav button { width: 44px; height: 44px; border: 0; background: none; cursor: pointer; display: grid; place-items: center; position: relative; }
+  .nav button:hover { background: var(--hover); }
+  .nav button.on .ms { color: var(--accent); }
+  .nav button + button { border-top: 1px solid var(--edge); }
+  .nav button[data-tip]:hover::after { content: attr(data-tip); position: absolute; left: 52px; top: 50%; transform: translateY(-50%); background: var(--glass-strong); padding: 4px 10px; border-radius: 8px; font-size: .78rem; white-space: nowrap; border: 1px solid var(--edge); }
+
+  .legend { position: fixed; left: 76px; bottom: 44px; z-index: 10; border-radius: 14px; padding: 10px 14px; font-size: .78rem; line-height: 1.8; }
+  .legend b { display: block; font-size: .8rem; margin-bottom: 2px; }
+  .legend .pl { display: inline-block; width: 18px; border-top: 2px solid var(--plate); margin-left: 6px; vertical-align: middle; }
+
+  .statusbar { position: fixed; left: 0; bottom: 0; z-index: 9; height: 28px; display: flex; align-items: center; gap: 16px; padding: 0 16px; font-size: .72rem; color: var(--muted); }
+  .statusbar a { color: var(--muted); }
+
+  /* tooltip from globe.gl */
+  .scene-tooltip, .float-tooltip-kap { font-family: "Heebo", sans-serif !important; }
+  .tip { direction: rtl; text-align: right; background: var(--glass-strong); border: 1px solid var(--edge); border-radius: 12px; padding: 8px 12px; font-size: 13px; line-height: 1.5; box-shadow: var(--shadow); min-width: 180px; }
+  .tip b { font-size: 14px; }
+
+  /* ---------- toasts ---------- */
+  #toasts { position: fixed; left: 16px; top: 80px; z-index: 30; display: flex; flex-direction: column; gap: 10px; width: 330px; max-width: calc(100vw - 104px); }
+  .toast { border-radius: 16px; padding: 12px 14px; cursor: pointer; animation: slidein .45s cubic-bezier(.2,.8,.2,1); position: relative; overflow: hidden; background: var(--glass-strong); }
+  .toast::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--c, #ff3b3b); }
+  .toast .t-title { font-weight: 700; font-size: .88rem; color: #ffb4b4; display: flex; align-items: center; gap: 6px; }
+  .toast .t-body { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+  .toast .close { position: absolute; left: 6px; top: 6px; }
+  .toast .bar-life { position: absolute; bottom: 0; right: 0; height: 2px; background: var(--c, #ff3b3b); animation: life 20s linear forwards; }
+  @keyframes life { from { width: 100%; } to { width: 0; } }
+  @keyframes slidein { from { transform: translateX(-110%); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  .loading { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: #000; transition: opacity .8s; }
+  .loading.done { opacity: 0; pointer-events: none; }
+  .loading .ring { width: 54px; height: 54px; border-radius: 50%; border: 3px solid rgba(138,180,248,.2); border-top-color: var(--accent); animation: spin 1s linear infinite; margin: 0 auto 14px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 1200px) { .topbar .chip { display: none; } }
+  @media (max-width: 820px) {
+    .rail { top: auto; left: 0; width: auto; height: 64px; flex-direction: row; justify-content: space-around; padding: 0 8px; border-left: 0; border-top: 1px solid var(--edge); }
+    .rail .logo { display: none; }
+    .drawer, .drawer.wide { right: 8px; left: 8px; width: auto; top: auto; bottom: 72px; height: 58vh; }
+    .drawer.closed { transform: translateY(30px); }
+    .topbar { top: 10px; padding: 6px 10px; max-width: calc(100vw - 20px); }
+    .topbar .chip { display: none; }
+    .topbar .brand { font-size: .9rem; }
+    #liveText { display: none; }
+    .nav { bottom: 80px; left: 10px; }
+    .legend { display: none; }
+    .statusbar { display: none; }
+    #toasts { top: 64px; left: 10px; max-width: calc(100vw - 20px); }
+  }
+</style>
+</head>
+<body>
+
+<div id="globe"></div>
+
+<div class="loading" id="loading"><div style="text-align:center"><div class="ring"></div><div class="muted">טוען את כדור הארץ…</div></div></div>
+
+<!-- top bar -->
+<div class="topbar glass">
+  <div class="brand"><span class="ms">public</span>רעידות אדמה בעולם · בזמן אמת</div>
+  <button class="chip" id="topChip" title="עוף לרעידה החזקה ביותר"><span class="ms" style="font-size:18px">bolt</span><span id="topChipText">—</span></button>
+  <div class="live"><span class="dot" id="liveDot"></span><span id="liveText">טוען נתונים…</span></div>
+</div>
+
+<!-- side rail -->
+<nav class="rail">
+  <div class="logo"><span class="ms">earthquake</span></div>
+  <button data-view="list" class="on"><span class="ms">format_list_bulleted</span>רעידות</button>
+  <button data-view="stats"><span class="ms">insights</span>נתונים</button>
+  <button data-view="layers"><span class="ms">layers</span>שכבות</button>
+  <button data-view="learn"><span class="ms">school</span>למידה</button>
+</nav>
+
+<!-- drawer -->
+<aside class="drawer glass" id="drawer">
+  <div class="d-head">
+    <h2 id="dTitle">רעידות אדמה</h2>
+    <button class="icon-btn" id="dClose" title="סגירה"><span class="ms">close</span></button>
+  </div>
+  <div class="d-body">
+
+    <section class="view on" id="v-list">
+      <div class="sortbar" id="sortbar">
+        <button class="pill on" data-sort="time">החדשות ביותר</button>
+        <button class="pill" data-sort="mag">החזקות ביותר</button>
+        <button class="pill" data-sort="israel">הקרובות לישראל</button>
+      </div>
+      <div id="rows"><div class="muted small">טוען…</div></div>
+      <div class="muted small" id="listNote" style="margin-top:8px"></div>
+    </section>
+
+    <section class="view" id="v-stats">
+      <div class="cards" id="cards"></div>
+      <div class="chart"><h3>כמה רעידות בכל דרגת עוצמה?</h3><div id="chMag"></div></div>
+      <div class="chart"><h3>באיזה עומק התרחשו?</h3><div id="chDepth"></div></div>
+      <div class="chart"><h3>האזורים הפעילים ביותר</h3><div id="chRegion"></div></div>
+    </section>
+
+    <section class="view" id="v-layers">
+      <div class="group"><h3>טווח זמן</h3>
+        <div class="opts" data-name="period">
+          <button class="opt" data-v="hour">שעה אחרונה</button>
+          <button class="opt on" data-v="day">24 שעות</button>
+          <button class="opt" data-v="week">שבוע</button>
+          <button class="opt" data-v="month">חודש</button>
+        </div></div>
+      <div class="group"><h3>עוצמה מינימלית</h3>
+        <div class="opts" data-name="minmag">
+          <button class="opt" data-v="all">הכול</button>
+          <button class="opt on" data-v="2.5">2.5+</button>
+          <button class="opt" data-v="4.5">4.5+ (משמעותיות)</button>
+        </div></div>
+      <div class="group"><h3>צבע הרעידות לפי</h3>
+        <div class="opts" data-name="color">
+          <button class="opt on" data-v="mag">עוצמה (מגניטודה)</button>
+          <button class="opt" data-v="depth">עומק המוקד</button>
+        </div></div>
+      <div class="group"><h3>מראה כדור הארץ</h3>
+        <div class="opts" data-name="skin">
+          <button class="opt on" data-v="day">🛰️ לוויין – יום</button>
+          <button class="opt" data-v="night">🌃 לילה – אורות ערים</button>
+        </div>
+        <div class="muted small" style="margin-top:6px">טיפ: במצב לילה רואים היכן גרים הרבה אנשים. השוו את זה למיקום הרעידות!</div>
+      </div>
+      <div class="group"><h3>שכבות והגדרות</h3>
+        <label class="toggle">גבולות לוחות טקטוניים <input type="checkbox" id="plates" checked><span class="switch"></span></label>
+        <label class="toggle">עמודות גובה לפי עוצמה <input type="checkbox" id="bars3d" checked><span class="switch"></span></label>
+        <label class="toggle">סיבוב אוטומטי של הגלובוס <input type="checkbox" id="rotate" checked><span class="switch"></span></label>
+        <label class="toggle">צליל בהתראה על רעידה חדשה <input type="checkbox" id="sound"><span class="switch"></span></label>
+        <button class="btn" id="demoToast"><span class="ms">notifications_active</span>הדגמת התראה לכיתה</button>
+      </div>
+    </section>
+
+    <section class="view" id="v-learn">
+      <div class="chips" id="chips">
+        <button class="pill on" data-l="l-read">איך קוראים</button>
+        <button class="pill" data-l="l-mag">מגניטודה</button>
+        <button class="pill" data-l="l-depth">עומק</button>
+        <button class="pill" data-l="l-israel">ישראל</button>
+        <button class="pill" data-l="l-q">שאלות לחקר</button>
+        <button class="pill" data-l="l-sites">אתרים</button>
+      </div>
+
+      <div class="lesson on" id="l-read">
+        <h3>איך קוראים את הגלובוס?</h3>
+        <ul>
+          <li><b>כל עמודה או נקודה היא רעידת אדמה אחת</b>, במיקום ה<b>מוקד העילי (אפיצנטר)</b>.</li>
+          <li><b>גובה העמודה ורוחבה</b> מראים את העוצמה. עמודה גבוהה = רעידה חזקה.</li>
+          <li><b>הצבע</b> מראה עוצמה או עומק. בוחרים בלשונית "שכבות".</li>
+          <li><b>הקווים הכתומים</b> הם הגבולות בין הלוחות הטקטוניים.</li>
+          <li><b>גלים מתרחבים</b> מסמנים רעידה חדשה או רעידה שבחרתם. על כל רעידה חדשה קופץ גם באנר בצד המסך.</li>
+          <li>גוררים את הגלובוס כדי לסובב אותו, וגוללים כדי להתקרב.</li>
+        </ul>
+        <div class="note">⚠️ הנתונים מגיעים מ-USGS באיחור של כמה דקות, ולפעמים יותר. רעידות קטנות נקלטות בעיקר באזורים שיש בהם הרבה תחנות מדידה, כמו קליפורניה, אלסקה והוואי, ולכן צריך להיזהר כשמסיקים מהן מסקנות.</div>
+      </div>
+
+      <div class="lesson" id="l-mag">
+        <h3>מגניטודה – כמה אנרגיה השתחררה?</h3>
+        <p><b>מגניטודה</b> היא מספר אחד לכל רעידה, והיא מודדת את <b>האנרגיה</b> שהשתחררה במוקד. היום משתמשים בעיקר בסולם המגניטודה של המומנט (Mw), אבל ביומיום עדיין אומרים "סולם ריכטר".</p>
+        <p><b>עצימות</b> (סולם מרקלי, I–XII) מתארת <b>מה הרגישו ואיזה נזק נגרם במקום מסוים</b>. לכן לרעידה אחת יש מגניטודה אחת, אבל עצימויות שונות במקומות שונים.</p>
+        <table>
+          <tr><th>מגניטודה</th><th>תיאור</th><th>השפעה אופיינית</th></tr>
+          <tr><td><span class="swatch" style="background:var(--m1)"></span>&lt; 2.5</td><td>זעירה</td><td>בדרך כלל לא מורגשת</td></tr>
+          <tr><td><span class="swatch" style="background:var(--m2)"></span>2.5–4.4</td><td>קלה</td><td>לפעמים מורגשת, ונזק נדיר</td></tr>
+          <tr><td><span class="swatch" style="background:var(--m3)"></span>4.5–5.9</td><td>בינונית</td><td>נזק אפשרי למבנים חלשים</td></tr>
+          <tr><td><span class="swatch" style="background:var(--m4)"></span>6.0–6.9</td><td>חזקה</td><td>נזק משמעותי באזורים מיושבים</td></tr>
+          <tr><td><span class="swatch" style="background:var(--m5)"></span>7.0+</td><td>חזקה מאוד</td><td>נזק כבד, ואם המוקד מתחת לים ייתכן צונאמי</td></tr>
+        </table>
+        <p><b>הסולם לוגריתמי:</b> כל עלייה של מספר שלם אחד במגניטודה פירושה שחרור אנרגיה גדול <b>פי 32 בערך</b>.</p>
+        <div class="calc">🧮 רעידה בעוצמה <input type="number" id="cA" value="7" step="0.1" min="0" max="10"> משחררת פי <span class="res" id="cRes">—</span> יותר אנרגיה מרעידה בעוצמה <input type="number" id="cB" value="5" step="0.1" min="0" max="10"></div>
+      </div>
+
+      <div class="lesson" id="l-depth">
+        <h3>עומק המוקד</h3>
+        <p>ה<b>מוקד (היפוצנטר)</b> הוא הנקודה בתוך כדור הארץ שבה התחילה הרעידה. ה<b>מוקד העילי (אפיצנטר)</b> נמצא על פני השטח בדיוק מעליו.</p>
+        <table>
+          <tr><th>קבוצה</th><th>עומק</th><th>מה חשוב לדעת</th></tr>
+          <tr><td><span class="swatch" style="background:var(--d1)"></span>רדודה</td><td>0–70 ק"מ</td><td>הסוג הנפוץ ביותר, ובדרך כלל גורם לנזק הגדול ביותר</td></tr>
+          <tr><td><span class="swatch" style="background:var(--d2)"></span>בינונית</td><td>70–300 ק"מ</td><td>מופיעה בעיקר באזורי הפחתה</td></tr>
+          <tr><td><span class="swatch" style="background:var(--d3)"></span>עמוקה</td><td>300–700 ק"מ</td><td>מופיעה <b>רק</b> במקומות שבהם לוח אוקייני שוקע לתוך המעטפת</td></tr>
+        </table>
+        <p><b>נסו בעצמכם:</b> ב"שכבות" בחרו צבע לפי <b>עומק</b>, טווח של <b>חודש</b> ועוצמה <b>4.5+</b>. סובבו את הגלובוס לדרום אמריקה, ליפן או לטונגה. מה קורה לעומק הרעידות ככל שמתרחקים מהחוף לכיוון היבשה?</p>
+      </div>
+
+      <div class="lesson" id="l-israel">
+        <h3>ישראל ורעידות אדמה</h3>
+        <p>ישראל נמצאת לאורך <b>בקע ים המלח</b> (נקרא גם "השבר הסורי-אפריקני"). זה גבול בין <b>הלוח הערבי</b> לבין <b>תת-לוח סיני</b> (חלק מהלוח האפריקני). הלוחות נעים זה לצד זה בתנועה אופקית, בקצב של כמה מילימטרים בשנה.</p>
+        <ul>
+          <li><b>1927 – רעידת יריחו:</b> רעידה במגניטודה של כ-6.2. נהרגו בה מאות אנשים, ונגרם נזק בירושלים, שכם, לוד ורמלה.</li>
+          <li><b>749 לספירה:</b> רעידה הרסנית שהחריבה ערים באזור, ובהן בית שאן וטבריה.</li>
+          <li>הגבול הזה פעיל, ולכן מומחים צופים שבעתיד תתרחש בישראל רעידה חזקה. אי אפשר לדעת מתי.</li>
+          <li>בישראל פועלת <b>מערכת התרעה מוקדמת</b>. היא יכולה לתת כמה שניות התרעה לפני שהגלים ההרסניים מגיעים.</li>
+        </ul>
+        <p>ההנחיות המעודכנות למה עושים ברעידת אדמה נמצאות באתר <a href="https://www.oref.org.il/" target="_blank" rel="noopener">פיקוד העורף</a>.</p>
+        <p><b>על הגלובוס:</b> לחצו על כפתור ישראל בצד המסך, ומיינו את הרשימה לפי "הקרובות לישראל".</p>
+      </div>
+
+      <div class="lesson" id="l-q">
+        <h3>שאלות לחקר ומסקנות</h3>
+        <p class="muted small">נסו לענות לבד, ורק אחר כך פתחו את הרמז.</p>
+        <details><summary>1. היכן נמצאות רוב הרעידות? האם הן מפוזרות באקראי?</summary><div class="hint">רוב הרעידות מתרכזות ב<b>רצועות צרות לאורך גבולות הלוחות</b>. מכאן אפשר להסיק שרעידות אדמה נגרמות בעיקר מתנועת הלוחות זה ביחס לזה.</div></details>
+        <details><summary>2. מצאו את "טבעת האש" של האוקיינוס השקט. אילו מדינות נמצאות עליה?</summary><div class="hint">צ'ילה, פרו, מקסיקו, ארה"ב (קליפורניה ואלסקה), יפן, הפיליפינים, אינדונזיה, ניו זילנד, טונגה ועוד. כאן מתרחשות רוב הרעידות החזקות בעולם, ויש כאן גם הרבה הרי געש.</div></details>
+        <details><summary>3. צבעו לפי עומק. היכן מופיעות הרעידות העמוקות (הכחולות)?</summary><div class="hint">רק באזורי <b>הפחתה</b>, שבהם לוח אוקייני צולל מתחת ללוח אחר. ככל שמתרחקים מהשוחה האוקיינית, הרעידות עמוקות יותר, כי הן מסמנות את הלוח השוקע.</div></details>
+        <details><summary>4. מצאו רעידות באמצע האוקיינוס האטלנטי. איזה גבול לוחות יש שם?</summary><div class="hint">שם עובר <b>הרכס המרכז-אטלנטי</b>, גבול מתרחק שבו נוצר קרום אוקייני חדש. הרעידות שם בדרך כלל רדודות.</div></details>
+        <details><summary>5. בחרו "הכול" בעוצמה. למה יש כל כך הרבה רעידות קטנות בארה"ב ומעט באפריקה?</summary><div class="hint">זו <b>הטיה בנתונים</b>. בארה"ב יש רשתות צפופות של מדי רעידות, ולכן נקלטות גם רעידות זעירות. במקומות אחרים קולטים בעיקר רעידות גדולות. מסקנה: חשוב לשאול <b>איך נאספו הנתונים</b>.</div></details>
+        <details><summary>6. בלשונית "נתונים": מה הקשר בין עוצמת הרעידות למספר שלהן?</summary><div class="hint">יש הרבה רעידות קטנות ומעט חזקות. בערך: על כל עלייה של מגניטודה אחת, מספר הרעידות קטן פי 10 בערך (חוק גוטנברג–ריכטר).</div></details>
+        <details><summary>7. עברו למצב "לילה – אורות ערים". האם רעידה חזקה תמיד גורמת לאסון גדול?</summary><div class="hint">לא בהכרח. הנזק תלוי ב<b>עומק המוקד</b>, ב<b>קרבה לאזורים מיושבים</b> (האורות!), ב<b>איכות הבנייה</b>, בסוג הקרקע וב<b>היערכות</b> של המדינה.</div></details>
+        <details><summary>8. השאירו את האתר פתוח במהלך השיעור. כמה רעידות חדשות הופיעו? האם אפשר לחזות רעידות?</summary><div class="hint">אפשר לדעת <b>היכן</b> צפויות רעידות, לאורך גבולות הלוחות, אבל אי אפשר לחזות <b>מתי בדיוק</b> ו<b>באיזו עוצמה</b>. לכן ההיערכות מראש חשובה כל כך: תקני בנייה, מערכות התרעה ותרגילים.</div></details>
+      </div>
+
+      <div class="lesson" id="l-sites">
+        <h3>אתרים מומלצים</h3>
+        <a class="site" href="https://earthquake.usgs.gov/earthquakes/map/" target="_blank" rel="noopener"><b>USGS – Latest Earthquakes</b><div class="muted small">מקור הנתונים של האתר, עם דף מפורט לכל רעידה (באנגלית)</div></a>
+        <a class="site" href="https://www.emsc-csem.org/" target="_blank" rel="noopener"><b>EMSC – המרכז הסייסמולוגי האירופי-ים תיכוני</b><div class="muted small">מתאים לאזור שלנו, כולל דיווחים של אנשים שהרגישו את הרעידה (באנגלית)</div></a>
+        <a class="site" href="https://ds.iris.edu/seismon/" target="_blank" rel="noopener"><b>IRIS Seismic Monitor</b><div class="muted small">מפה פשוטה של רעידות אחרונות וגלי רעידה (באנגלית)</div></a>
+        <a class="site" href="https://www.gsi.gov.il/" target="_blank" rel="noopener"><b>המכון הגיאולוגי לישראל</b><div class="muted small">ניטור רעידות אדמה בישראל ומערכת ההתרעה</div></a>
+        <a class="site" href="https://www.oref.org.il/" target="_blank" rel="noopener"><b>פיקוד העורף</b><div class="muted small">הנחיות התגוננות ברעידת אדמה</div></a>
+      </div>
+    </section>
+  </div>
+</aside>
+
+<!-- globe navigation -->
+<div class="nav">
+  <div class="group-btns glass">
+    <button id="zoomIn" data-tip="התקרבות"><span class="ms">add</span></button>
+    <button id="zoomOut" data-tip="התרחקות"><span class="ms">remove</span></button>
+  </div>
+  <div class="group-btns glass">
+    <button id="viewWorld" data-tip="מבט עולמי"><span class="ms">public</span></button>
+    <button id="viewIsrael" data-tip="ישראל והסביבה"><span class="ms">my_location</span></button>
+    <button id="rotateBtn" class="on" data-tip="סיבוב אוטומטי"><span class="ms">360</span></button>
+  </div>
+</div>
+
+<div class="legend glass" id="legend"></div>
+
+<div class="statusbar">
+  <span id="clock"></span>
+  <span>נתונים: <a href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php" target="_blank" rel="noopener">USGS</a> · גבולות לוחות: Bird (2003) PB2002 · תמונות: NASA דרך three-globe</span>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script src="https://unpkg.com/globe.gl@2.46.2/dist/globe.gl.min.js"></script>
+<script>
+const FEED = (mag, period) => `https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/${mag}_${period}.geojson`;
+const PLATES_URL = 'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json';
+const IMG = 'https://unpkg.com/three-globe@2.31.0/example/img/';
+const ISRAEL = [31.77, 35.21]; // Jerusalem
+const REFRESH_SEC = 60;
+const MAX_ROWS = 300;
+const MERGE_ABOVE = 2500; // above this many points, merge geometry for speed (no hover)
+
+const state = {
+  features: [], seen: new Set(), newIds: new Map(), first: true,
+  period: 'day', minmag: '2.5', colorMode: 'mag', sort: 'time',
+  selectedId: null, pings: [], view: 'list'
+};
+
+// ---------- helpers ----------
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+const MAG_CLASSES = [
+  { max: 2.5, label: 'זעירה (מתחת ל-2.5)', v: '--m1' },
+  { max: 4.5, label: 'קלה (2.5–4.4)', v: '--m2' },
+  { max: 6, label: 'בינונית (4.5–5.9)', v: '--m3' },
+  { max: 7, label: 'חזקה (6–6.9)', v: '--m4' },
+  { max: Infinity, label: 'חזקה מאוד (7+)', v: '--m5' },
+];
+const DEPTH_CLASSES = [
+  { max: 70, label: 'רדודה (0–70 ק"מ)', short: 'רדודה', v: '--d1' },
+  { max: 300, label: 'בינונית (70–300)', short: 'בינונית', v: '--d2' },
+  { max: Infinity, label: 'עמוקה (300+)', short: 'עמוקה', v: '--d3' },
+];
+const magIdx = m => MAG_CLASSES.findIndex(c => (m ?? 0) < c.max);
+const depthIdx = d => DEPTH_CLASSES.findIndex(c => (d ?? 0) < c.max);
+const magColor = m => css(MAG_CLASSES[magIdx(m)].v);
+const depthColor = d => css(DEPTH_CLASSES[depthIdx(d)].v);
+const pointColor = f => state.colorMode === 'mag' ? magColor(f.properties.mag) : depthColor(f.geometry.coordinates[2]);
+const fmtMag = m => (m == null ? '?' : m.toFixed(1));
+const magBadge = (m, sm) => `<span class="mag${sm ? ' sm' : ''}" style="background:${magColor(m)};color:${magColor(m)}"><span>${fmtMag(m)}</span></span>`;
+const lat = f => f.geometry.coordinates[1], lng = f => f.geometry.coordinates[0];
+
+function distKm([lat1, lon1], [lat2, lon2]) {
+  const r = Math.PI / 180, a = Math.sin((lat2 - lat1) * r / 2) ** 2 +
+    Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin((lon2 - lon1) * r / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(a));
+}
+const dIsr = f => distKm(ISRAEL, [lat(f), lng(f)]);
+const fmtTime = ms => new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(ms);
+function ago(ms) {
+  const s = (Date.now() - ms) / 1000;
+  if (s < 60) return 'לפני פחות מדקה';
+  const m = Math.round(s / 60); if (m < 60) return `לפני ${m} דק'`;
+  const h = Math.round(m / 60); if (h < 24) return `לפני ${h} שע'`;
+  return `לפני ${Math.round(h / 24)} ימים`;
+}
+function hexToRgb(hex) { const n = parseInt(hex.replace('#', ''), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+
+// Region name (in Hebrew when known) from USGS "place" text
+const US_STATES = { CA: 'California', AK: 'Alaska', HI: 'Hawaii', NV: 'Nevada', WA: 'Washington', OR: 'Oregon', UT: 'Utah', MT: 'Montana', ID: 'Idaho', WY: 'Wyoming', TX: 'Texas', OK: 'Oklahoma', NM: 'New Mexico', AZ: 'Arizona', CO: 'Colorado', KS: 'Kansas', TN: 'Tennessee', MO: 'Missouri', AR: 'Arkansas', SC: 'South Carolina' };
+const HE = { 'Japan': 'יפן', 'Indonesia': 'אינדונזיה', 'Chile': "צ'ילה", 'Alaska': 'אלסקה', 'California': 'קליפורניה', 'Hawaii': 'הוואי', 'Turkey': 'טורקיה', 'Türkiye': 'טורקיה', 'Greece': 'יוון', 'Italy': 'איטליה', 'Iran': 'איראן', 'Mexico': 'מקסיקו', 'Peru': 'פרו', 'Philippines': 'הפיליפינים', 'Papua New Guinea': 'פפואה גינאה החדשה', 'Tonga': 'טונגה', 'Fiji': "פיג'י", 'New Zealand': 'ניו זילנד', 'Taiwan': 'טייוואן', 'China': 'סין', 'Puerto Rico': 'פוארטו ריקו', 'Nevada': 'נבדה', 'Argentina': 'ארגנטינה', 'Vanuatu': 'ונואטו', 'Russia': 'רוסיה', 'Afghanistan': 'אפגניסטן', 'Pakistan': 'פקיסטן', 'India': 'הודו', 'Nepal': 'נפאל', 'Israel': 'ישראל', 'Cyprus': 'קפריסין', 'Egypt': 'מצרים', 'Jordan': 'ירדן', 'Syria': 'סוריה', 'Lebanon': 'לבנון', 'Saudi Arabia': 'ערב הסעודית', 'Ecuador': 'אקוודור', 'Colombia': 'קולומביה', 'Guatemala': 'גואטמלה', 'El Salvador': 'אל סלבדור', 'Nicaragua': 'ניקרגואה', 'Costa Rica': 'קוסטה ריקה', 'Panama': 'פנמה', 'Bolivia': 'בוליביה', 'Solomon Islands': 'איי שלמה', 'Iceland': 'איסלנד', 'Washington': 'וושינגטון', 'Oregon': 'אורגון', 'Utah': 'יוטה', 'Montana': 'מונטנה', 'Texas': 'טקסס', 'Oklahoma': 'אוקלהומה', 'Idaho': 'איידהו', 'Wyoming': 'ויומינג', 'Kermadec Islands': 'איי קרמדק', 'Mid-Atlantic Ridge': 'הרכס המרכז-אטלנטי', 'Canada': 'קנדה', 'Myanmar': 'מיאנמר', 'Tajikistan': "טג'יקיסטן", 'Kyrgyzstan': 'קירגיזסטן', 'Kazakhstan': 'קזחסטן', 'Albania': 'אלבניה', 'Croatia': 'קרואטיה', 'Romania': 'רומניה', 'Spain': 'ספרד', 'Portugal': 'פורטוגל', 'Morocco': 'מרוקו', 'Algeria': "אלג'יריה", 'Ethiopia': 'אתיופיה', 'Dominican Republic': 'הרפובליקה הדומיניקנית', 'Haiti': 'האיטי', 'Cuba': 'קובה', 'Venezuela': 'ונצואלה', 'South Sandwich Islands': "איי סנדוויץ' הדרומיים", 'Northern Mariana Islands': 'איי מריאנה הצפוניים', 'Guam': 'גואם', 'Samoa': 'סמואה', 'American Samoa': 'סמואה האמריקנית', 'Timor Leste': 'מזרח טימור', 'Kuril Islands': 'איי קוריל', 'Aleutian Islands': 'איי אלאוטיים', 'New Mexico': 'ניו מקסיקו', 'Arizona': 'אריזונה', 'Colorado': 'קולורדו', 'Kansas': 'קנזס', 'U.S. Virgin Islands': 'איי הבתולה (ארה"ב)', 'British Virgin Islands': 'איי הבתולה הבריטיים' };
+function regionOf(place) {
+  if (!place) return 'לא ידוע';
+  let r = place.includes(',') ? place.split(',').pop().trim() : place.replace(/^.*\bof\s+(the\s+)?/i, '').replace(/\s+region$/i, '').trim();
+  if (US_STATES[r]) r = US_STATES[r];
+  if (/^B\.?C\.?$/.test(r)) r = 'Canada';
+  if (HE[r]) return HE[r];
+  for (const k of Object.keys(HE)) if (r.endsWith(' ' + k) || r.startsWith(k + ' ')) return HE[k];
+  return r;
+}
+
+// ---------- globe ----------
+const SKINS = { day: IMG + 'earth-blue-marble.jpg', night: IMG + 'earth-night.jpg' };
+const globe = new Globe($('globe'), { rendererConfig: { antialias: true, alpha: false } })
+  .globeImageUrl(SKINS.day)
+  .bumpImageUrl(IMG + 'earth-topology.png')
+  .backgroundImageUrl(IMG + 'night-sky.png')
+  .showAtmosphere(true).atmosphereColor('#7cc4ff').atmosphereAltitude(0.2)
+  .pointLat(lat).pointLng(lng)
+  .pointColor(pointColor)
+  .pointRadius(f => 0.18 + Math.max(f.properties.mag ?? 0, 0) * 0.07)
+  .pointResolution(10)
+  .pointsTransitionDuration(700)
+  .pointLabel(f => tipHtml(f))
+  .onPointClick(f => select(f.id, true))
+  .onPointHover(f => { $('globe').style.cursor = f ? 'pointer' : ''; })
+  .ringLat(d => d.lat).ringLng(d => d.lng)
+  .ringColor(d => { const [r, g, b] = hexToRgb(d.color); return t => `rgba(${r},${g},${b},${1 - t})`; })
+  .ringMaxRadius(d => d.maxR).ringPropagationSpeed(d => d.speed).ringRepeatPeriod(d => d.period)
+  .pathPoints(f => f.geometry.coordinates).pathPointLat(p => p[1]).pathPointLng(p => p[0])
+  .pathPointAlt(0.002).pathColor(() => css('--plate')).pathTransitionDuration(0)
+  .onGlobeReady(() => setTimeout(() => $('loading').classList.add('done'), 300));
+
+setPointAltitude();
+globe.pointOfView({ lat: 25, lng: 35, altitude: 2.4 }, 0);
+const controls = globe.controls();
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.35;
+controls.addEventListener('start', () => setRotate(false));
+
+// Keep the globe centred in the space left of the rail and the open drawer
+function resize() {
+  globe.width(window.innerWidth).height(window.innerHeight);
+  const wide = window.innerWidth > 820, open = !$('drawer').classList.contains('closed');
+  const covered = wide ? 72 + (open ? $('drawer').offsetWidth + 12 : 0) : 0;
+  globe.globeOffset([-covered / 2, 0]);
+}
+window.addEventListener('resize', resize); resize();
+
+let plateData = [];
+fetch(PLATES_URL).then(r => r.json()).then(d => { plateData = d.features; drawPlates(); }).catch(() => console.warn('plate boundaries failed to load'));
+function drawPlates() { globe.pathsData($('plates').checked ? plateData : []); }
+
+function setPointAltitude() {
+  globe.pointAltitude($('bars3d').checked ? f => 0.004 + Math.pow(Math.max(f.properties.mag ?? 0, 0), 2) * 0.0045 : 0.003);
+}
+
+function tipHtml(f) {
+  const p = f.properties, depth = f.geometry.coordinates[2];
+  return `<div class="tip"><b>${fmtMag(p.mag)} · ${esc(regionOf(p.place))}</b><br>
+    <span style="color:#9aa0a6">${ago(p.time)} · עומק ${depth.toFixed(0)} ק"מ (${DEPTH_CLASSES[depthIdx(depth)].short})</span><br>
+    <span style="color:#9aa0a6">${Math.round(dIsr(f)).toLocaleString('he-IL')} ק"מ מירושלים</span>
+    ${p.tsunami ? '<br>🌊 <b>דגל צונאמי – בדקו הודעות רשמיות</b>' : ''}</div>`;
+}
+
+function drawPoints() {
+  const merge = state.features.length > MERGE_ABOVE;
+  globe.pointsMerge(merge).pointsData(state.features);
+  $('listNote').textContent = merge ? 'יש הרבה רעידות, ולכן כדי שהגלובוס ירוץ חלק מושבתות הלחיצה והריחוף על העמודות. בחרו רעידה מהרשימה.' : '';
+}
+
+function drawRings() {
+  const now = Date.now();
+  state.pings = state.pings.filter(p => now - p.at < 90000);
+  const rings = state.pings.map(p => ({ ...p }));
+  const sel = state.features.find(f => f.id === state.selectedId);
+  if (sel) rings.push({ lat: lat(sel), lng: lng(sel), color: '#8ab4f8', maxR: 4, speed: 2, period: 900 });
+  globe.ringsData(rings);
+}
+
+function drawLegend() {
+  const cls = state.colorMode === 'mag' ? MAG_CLASSES : DEPTH_CLASSES;
+  $('legend').innerHTML = `<b>${state.colorMode === 'mag' ? 'מגניטודה' : 'עומק המוקד'}</b>` +
+    cls.map(c => `<div><span class="swatch" style="background:${css(c.v)}"></span>${c.label}</div>`).join('') +
+    `<div><span class="pl"></span>גבול לוחות</div>`;
+}
+
+// ---------- drawer ----------
+const TITLES = { list: 'רעידות אדמה', stats: 'נתונים ומגמות', layers: 'שכבות והגדרות', learn: 'פינת הלמידה' };
+function openView(v) {
+  const drawer = $('drawer');
+  if (state.view === v && !drawer.classList.contains('closed')) { closeDrawer(); return; }
+  state.view = v;
+  drawer.classList.remove('closed');
+  drawer.classList.toggle('wide', v === 'learn');
+  $('dTitle').textContent = TITLES[v];
+  document.querySelectorAll('.view').forEach(s => s.classList.toggle('on', s.id === 'v-' + v));
+  setRailOn(v);
+  resize();
+}
+function closeDrawer() { $('drawer').classList.add('closed'); setRailOn(null); resize(); }
+function setRailOn(v) { document.querySelectorAll('.rail button').forEach(b => b.classList.toggle('on', b.dataset.view === v)); }
+document.querySelectorAll('.rail button').forEach(b => b.onclick = () => openView(b.dataset.view));
+$('dClose').onclick = closeDrawer;
+
+// ---------- list ----------
+function sorted() {
+  const arr = [...state.features];
+  if (state.sort === 'mag') arr.sort((a, b) => (b.properties.mag ?? -9) - (a.properties.mag ?? -9));
+  else if (state.sort === 'israel') arr.sort((a, b) => dIsr(a) - dIsr(b));
+  else arr.sort((a, b) => b.properties.time - a.properties.time);
+  return arr;
+}
+function drawList() {
+  const arr = sorted(), rows = arr.slice(0, MAX_ROWS);
+  $('rows').innerHTML = rows.length ? rows.map(f => {
+    const p = f.properties, depth = f.geometry.coordinates[2];
+    const isNew = state.newIds.has(f.id) && Date.now() - state.newIds.get(f.id) < 10 * 60000;
+    const sub = state.sort === 'israel' ? `${Math.round(dIsr(f)).toLocaleString('he-IL')} ק"מ מירושלים` : `עומק ${depth.toFixed(0)} ק"מ`;
+    return `<div class="q${f.id === state.selectedId ? ' sel' : ''}" data-id="${esc(f.id)}">
+      ${magBadge(p.mag)}
+      <div style="min-width:0"><div class="region">${esc(regionOf(p.place))}${isNew ? '<span class="tag-new">חדש!</span>' : ''}${p.tsunami ? '<span class="tag-ts" title="דגל צונאמי">🌊</span>' : ''}</div>
+        <div class="place">${esc(p.place)}</div></div>
+      <div class="when">${ago(p.time)}<br>${sub}</div></div>`;
+  }).join('') : '<div class="muted small">אין רעידות בטווח שנבחר. נסו טווח זמן ארוך יותר או עוצמה נמוכה יותר בלשונית "שכבות".</div>';
+  if (!$('listNote').textContent && arr.length > MAX_ROWS) $('listNote').textContent = `מוצגות ${MAX_ROWS} מתוך ${arr.length.toLocaleString('he-IL')} (כולן מופיעות על הגלובוס)`;
+}
+$('rows').addEventListener('click', e => { const q = e.target.closest('.q[data-id]'); if (q) select(q.dataset.id, true); });
+document.querySelectorAll('#sortbar .pill').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#sortbar .pill').forEach(x => x.classList.toggle('on', x === b));
+  state.sort = b.dataset.sort; drawList();
+});
+
+function select(id, fly) {
+  const f = state.features.find(x => x.id === id);
+  if (!f) return;
+  state.selectedId = id;
+  setRotate(false);
+  if (fly) globe.pointOfView({ lat: lat(f), lng: lng(f), altitude: 0.9 }, 1600);
+  drawRings();
+  if ($('drawer').classList.contains('closed') || state.view !== 'list') openView('list');
+  document.querySelectorAll('#rows .q').forEach(q => q.classList.toggle('sel', q.dataset.id === id));
+  const el = document.querySelector(`#rows .q[data-id="${CSS.escape(id)}"]`);
+  if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+// ---------- stats ----------
+function bars(el, rows) {
+  const max = Math.max(1, ...rows.map(r => r.n));
+  $(el).innerHTML = rows.map(r => `<div class="bar-row"><span>${esc(r.label)}</span>
+    <div class="bar-track"><div class="bar" style="width:${(r.n / max * 100).toFixed(1)}%;background:${r.color}"></div></div>
+    <span class="bar-n">${r.n.toLocaleString('he-IL')}</span></div>`).join('');
+}
+const PERIOD_TXT = { hour: 'בשעה האחרונה', day: 'ב-24 השעות האחרונות', week: 'בשבוע האחרון', month: 'בחודש האחרון' };
+function drawStats() {
+  const fs = state.features, n = fs.length;
+  const strongest = fs.reduce((a, b) => (b.properties.mag ?? -9) > (a?.properties.mag ?? -9) ? b : a, null);
+  const nearest = fs.reduce((a, b) => !a || dIsr(b) < dIsr(a) ? b : a, null);
+  const shallow = fs.filter(f => f.geometry.coordinates[2] < 70).length;
+  const tsunami = fs.filter(f => f.properties.tsunami).length;
+  const card = (k, v, s) => `<div class="card"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  $('cards').innerHTML =
+    card('מספר רעידות', n.toLocaleString('he-IL'), PERIOD_TXT[state.period]) +
+    card('החזקה ביותר', strongest ? fmtMag(strongest.properties.mag) : '—', strongest ? esc(regionOf(strongest.properties.place)) : '') +
+    card('הקרובה לישראל', nearest ? Math.round(dIsr(nearest)).toLocaleString('he-IL') + ' <span style="font-size:.9rem">ק"מ</span>' : '—', nearest ? `${esc(regionOf(nearest.properties.place))} · ${fmtMag(nearest.properties.mag)}` : '') +
+    card('רעידות רדודות', n ? Math.round(shallow / n * 100) + '%' : '—', 'עומק של פחות מ-70 ק"מ') +
+    card('דגלי צונאמי', tsunami, tsunami ? 'בדקו הודעות רשמיות' : 'אין בטווח שנבחר') +
+    card('הממוצע לשעה', n ? (n / { hour: 1, day: 24, week: 168, month: 720 }[state.period]).toFixed(1) : '—', 'רעידות בשעה');
+  bars('chMag', MAG_CLASSES.map((c, i) => ({ label: c.label, n: fs.filter(f => magIdx(f.properties.mag) === i).length, color: css(c.v) })));
+  bars('chDepth', DEPTH_CLASSES.map((c, i) => ({ label: c.label, n: fs.filter(f => depthIdx(f.geometry.coordinates[2]) === i).length, color: css(c.v) })));
+  const counts = {};
+  fs.forEach(f => { const r = regionOf(f.properties.place); counts[r] = (counts[r] || 0) + 1; });
+  bars('chRegion', Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([label, n]) => ({ label, n, color: css('--accent') })));
+
+  $('topChipText').textContent = strongest ? `החזקה: ${fmtMag(strongest.properties.mag)} · ${regionOf(strongest.properties.place)}` : '—';
+  $('topChip').onclick = () => strongest && select(strongest.id, true);
+}
+
+// ---------- new-quake banners ----------
+function beep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)(), o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = 880; g.gain.setValueAtTime(.15, ctx.currentTime); g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .5);
+    o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime + .5);
+  } catch (e) { }
+}
+function toast(f, demo = false) {
+  const p = f.properties, depth = f.geometry.coordinates[2], color = magColor(p.mag);
+  const el = document.createElement('div');
+  el.className = 'toast glass';
+  el.style.setProperty('--c', color);
+  el.innerHTML = `<button class="icon-btn close" aria-label="סגירה"><span class="ms" style="font-size:18px">close</span></button>
+    <div class="t-title"><span class="ms" style="font-size:18px">notifications_active</span>${demo ? 'הדגמה: ' : ''}רעידת אדמה חדשה!</div>
+    <div class="t-body">${magBadge(p.mag)}<div><div class="region">${esc(regionOf(p.place))}</div>
+    <div class="muted small">${ago(p.time)} · עומק ${depth.toFixed(0)} ק"מ</div>
+    <div class="small" style="color:var(--accent);margin-top:2px">לחצו כדי לטוס לרעידה ←</div></div></div>
+    <div class="bar-life"></div>`;
+  el.querySelector('.close').onclick = e => { e.stopPropagation(); el.remove(); };
+  el.onclick = () => { select(f.id, true); el.remove(); };
+  const box = $('toasts');
+  box.prepend(el);
+  while (box.children.length > 4) box.lastChild.remove();
+  setTimeout(() => el.remove(), 20000);
+  state.pings.push({ lat: lat(f), lng: lng(f), color, maxR: 3 + Math.max(p.mag ?? 0, 0) * 1.2, speed: 3, period: 1100, at: Date.now() });
+  drawRings();
+  if ($('sound').checked) beep();
+}
+$('demoToast').onclick = () => {
+  const latest = [...state.features].sort((a, b) => b.properties.time - a.properties.time)[0];
+  if (latest) toast(latest, true);
+};
+
+// ---------- data loading ----------
+let countdown = REFRESH_SEC, lastOk = null;
+async function load() {
+  countdown = REFRESH_SEC;
+  try {
+    const res = await fetch(FEED(state.minmag, state.period), { cache: 'no-store' });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    // USGS also lists quarry blasts and explosions; keep only earthquakes
+    const fresh = data.features.filter(f => f.properties.type === 'earthquake');
+    if (!state.first) {
+      fresh.filter(f => !state.seen.has(f.id)).sort((a, b) => a.properties.time - b.properties.time).forEach(f => {
+        state.newIds.set(f.id, Date.now());
+        setTimeout(() => toast(f), 50);
+      });
+    }
+    fresh.forEach(f => state.seen.add(f.id));
+    state.features = fresh;
+    state.first = false;
+    lastOk = Date.now();
+    $('liveDot').classList.remove('err');
+    drawPoints(); drawList(); drawStats(); drawRings();
+  } catch (e) {
+    $('liveDot').classList.add('err');
+    $('liveText').textContent = 'אין חיבור לנתונים – מנסה שוב בעוד דקה';
+  }
+}
+function resetAndLoad() { state.first = true; state.seen.clear(); state.newIds.clear(); state.selectedId = null; state.pings = []; load(); }
+
+setInterval(() => {
+  countdown--;
+  if (countdown <= 0) load();
+  const t = new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  $('clock').textContent = 'שעון ישראל ' + t.format(Date.now());
+  if (lastOk && !$('liveDot').classList.contains('err'))
+    $('liveText').textContent = `חי · רענון בעוד ${countdown} שנ'`;
+}, 1000);
+
+// ---------- settings wiring ----------
+document.querySelectorAll('.opts').forEach(g => g.addEventListener('click', e => {
+  const b = e.target.closest('.opt'); if (!b) return;
+  g.querySelectorAll('.opt').forEach(x => x.classList.toggle('on', x === b));
+  const v = b.dataset.v;
+  switch (g.dataset.name) {
+    case 'period': state.period = v; resetAndLoad(); break;
+    case 'minmag': state.minmag = v; resetAndLoad(); break;
+    case 'color': state.colorMode = v; globe.pointColor(pointColor); drawLegend(); break;
+    case 'skin': globe.globeImageUrl(SKINS[v]); break;
+  }
+}));
+$('plates').onchange = drawPlates;
+$('bars3d').onchange = setPointAltitude;
+$('rotate').onchange = e => setRotate(e.target.checked);
+function setRotate(on) {
+  controls.autoRotate = on;
+  $('rotate').checked = on;
+  $('rotateBtn').classList.toggle('on', on);
+}
+$('rotateBtn').onclick = () => setRotate(!controls.autoRotate);
+const zoom = k => { const p = globe.pointOfView(); globe.pointOfView({ ...p, altitude: Math.min(Math.max(p.altitude * k, 0.15), 5) }, 500); };
+$('zoomIn').onclick = () => zoom(0.6);
+$('zoomOut').onclick = () => zoom(1 / 0.6);
+$('viewWorld').onclick = () => globe.pointOfView({ lat: 20, lng: 35, altitude: 2.4 }, 1500);
+$('viewIsrael').onclick = () => { setRotate(false); globe.pointOfView({ lat: 31.5, lng: 35, altitude: 0.45 }, 1800); };
+
+document.querySelectorAll('#chips .pill').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#chips .pill').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.lesson').forEach(l => l.classList.toggle('on', l.id === b.dataset.l));
+});
+function calc() {
+  const a = parseFloat($('cA').value), b = parseFloat($('cB').value);
+  if (isNaN(a) || isNaN(b)) { $('cRes').textContent = '—'; return; }
+  const r = Math.pow(10, 1.5 * (a - b));
+  $('cRes').textContent = r >= 1 ? Math.round(r).toLocaleString('he-IL') : r.toPrecision(2);
+}
+$('cA').oninput = $('cB').oninput = calc;
+calc();
+drawLegend();
+if (window.innerWidth <= 820) closeDrawer(); // on phones start with the globe visible
+load();
+// fallback in case onGlobeReady never fires (e.g. texture blocked)
+setTimeout(() => $('loading').classList.add('done'), 8000);
+</script>
+</body>
+</html>
